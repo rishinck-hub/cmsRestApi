@@ -1,55 +1,54 @@
-// controllers/labTechController.js
+const LabTest = require('../models/LabTest');
+const LabTestResult = require('../models/LabTestResult');
 
-// --- Lab Test Prescription Management ---
-exports.recordLabResult = (req, res) => {
-  const { labTestPrescriptionId } = req.params;
-  // Save lab results logic
-  res.json({ message: `Result recorded for prescription ${labTestPrescriptionId}` });
+exports.addLabTest = async (req, res) => {
+  const newTest = new LabTest(req.body);
+  await newTest.save();
+  res.status(201).json(newTest);
 };
 
-exports.getResultByAppointment = (req, res) => {
-  const { appointmentId } = req.params;
-  // Get lab result logic
-  res.json({ appointmentId, result: "Normal" });
+exports.updateLabTest = async (req, res) => {
+  const updated = await LabTest.findByIdAndUpdate(req.params.labTestId, req.body, { new: true });
+  res.json(updated);
 };
 
-exports.listResultsByDateRange = (req, res) => {
+exports.getLabTestById = async (req, res) => {
+  const test = await LabTest.findById(req.params.labTestId);
+  res.json(test);
+};
+
+exports.listAllLabTests = async (req, res) => {
+  const list = await LabTest.find();
+  res.json(list);
+};
+
+exports.deactivateLabTest = async (req, res) => {
+  const updated = await LabTest.findByIdAndUpdate(req.params.labTestId, { isActive: false });
+  res.json({ message: 'Lab test deactivated', updated });
+};
+
+exports.recordLabResult = async (req, res) => {
+  const result = new LabTestResult({
+    labTestPrescriptionId: req.params.labTestPrescriptionId,
+    resultData: req.body.resultData
+  });
+  await result.save();
+  res.status(201).json(result);
+};
+
+exports.getResultByAppointment = async (req, res) => {
+  const result = await LabTestResult.findOne({ appointmentId: req.params.appointmentId });
+  res.json(result);
+};
+
+exports.listResultsByDateRange = async (req, res) => {
   const { startDate, endDate } = req.query;
-  // List lab results in range
-  res.json([{ date: startDate }, { date: endDate }]);
+  const results = await LabTestResult.find({
+    recordedAt: { $gte: new Date(startDate), $lte: new Date(endDate) }
+  });
+  res.json(results);
 };
 
-exports.deactivateLabPrescription = (req, res) => {
-  const { labTestPrescriptionId } = req.params;
-  // Deactivate logic
-  res.json({ message: `Prescription ${labTestPrescriptionId} deactivated` });
-};
-
-// --- Lab Test Management ---
-exports.addLabTest = (req, res) => {
-  // Add lab test logic
-  res.status(201).json({ message: "Lab test added" });
-};
-
-exports.updateLabTest = (req, res) => {
-  const { labTestId } = req.params;
-  // Update lab test logic
-  res.json({ message: `Lab test ${labTestId} updated` });
-};
-
-exports.getLabTestById = (req, res) => {
-  const { labTestId } = req.params;
-  // Get lab test logic
-  res.json({ id: labTestId, name: "Blood Test" });
-};
-
-exports.listAllLabTests = (req, res) => {
-  // List all tests
-  res.json([{ id: 1, name: "X-Ray" }, { id: 2, name: "ECG" }]);
-};
-
-exports.deactivateLabTest = (req, res) => {
-  const { labTestId } = req.params;
-  // Deactivate test logic
-  res.json({ message: `Lab test ${labTestId} deactivated` });
+exports.deactivateLabPrescription = async (req, res) => {
+  res.json({ message: 'Lab test prescription deactivation not implemented yet' });
 };

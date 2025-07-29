@@ -1,16 +1,19 @@
-// validators/pharmacistValidator.js
-const { body } = require('express-validator');
+const express = require('express');
+const router = express.Router();
+const controller = require('../controllers/pharmacistController');
+const validator = require('../validation/pharmacistValidator');
+const validate = require('../middlewares/validateRequest');
 
-exports.validateMedicine = [
-  body('name').notEmpty().withMessage('Medicine name is required'),
-  body('price').isNumeric().withMessage('Price must be a number'),
-  body('category').optional().isString(),
-  body('brand').optional().isString(),
-  body('description').optional().isString()
-];
+router.post('/medicines', validator.validateMedicine, validate, controller.addMedicine);
+router.put('/medicines/:medicineId', validator.validateMedicine, validate, controller.updateMedicine);
+router.get('/medicines/:medicineId', controller.getMedicineById);
+router.get('/medicines', controller.listAllMedicines);
+router.patch('/medicines/:medicineId/deactivate', controller.deactivateMedicine);
 
-exports.validateInventory = [
-  body('medicine').notEmpty().withMessage('Medicine ID is required'),
-  body('quantity').isInt({ min: 0 }).withMessage('Quantity must be a non-negative integer'),
-  body('expiryDate').optional().isISO8601().toDate()
-];
+router.post('/inventory/medicine', validator.validateInventory, validate, controller.addInventoryItem);
+router.put('/inventory/medicine/:medicineStockId', validator.validateInventory, validate, controller.updateInventory);
+router.get('/inventory/medicine/:medicineId', controller.getInventoryByMedicine);
+router.get('/inventory/medicine', controller.listAllInventory);
+router.patch('/inventory/medicine/:medicineStockId/flag-low', controller.flagLowStock);
+
+module.exports = router;
