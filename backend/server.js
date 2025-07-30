@@ -1,24 +1,42 @@
-// ✅ Load environment variables
-require('dotenv').config();
+console.log('Starting server...');
+const express = require('express');
+const dotenv = require('dotenv');
+const connectDB = require('./config/db'); // Make sure this file exists
+const authRoutes = require('./routes/authRoute');
+const medicineRoutes = require('./routes/medicineRoutes'); // If available
+const inventoryRoutes = require('./routes/inventoryRoutes'); // If available
+const labTestRoutes = require('./routes/labTestRoutes'); // If available
+const cors = require('cors');
 
-const express = require("express");
-const mongoose = require("mongoose");
-const authRoutes = require("./routes/authRoutes");
-const pharmacistRoutes = require("./routes/pharmacistRoutes");
-const labtechRoutes = require("./routes/labtechRoutes");
+console.log('Loading environment variables...');
+dotenv.config();
 
+console.log('Creating Express app...');
 const app = express();
+
+console.log('Connecting to database...');
+// Connect to DB with error handling
+connectDB().catch(err => {
+  console.error('Failed to connect to MongoDB:', err.message);
+  console.log('Server will start without database connection');
+});
+
+app.use(cors());
 app.use(express.json());
 
-// ✅ MongoDB connection
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/medicines', medicineRoutes);
+app.use('/api/inventory/medicine', inventoryRoutes);
+app.use('/api/labtests', labTestRoutes);
 
-// ✅ Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/pharmacist", pharmacistRoutes);
-app.use("/api/labtech", labtechRoutes);
+// Root
+app.get('/', (req, res) => {
+  res.send('Clinic Management System API is running...');
+});
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

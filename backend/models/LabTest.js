@@ -1,9 +1,10 @@
-const labTestSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  description: String,
-  price: { type: Number, required: true },
-  isActive: { type: Boolean, default: true },
-  createdAt: { type: Date, default: Date.now }
-});
+const mongoose = require('mongoose');
 
-module.exports = mongoose.model('LabTest', labTestSchema);
+const LabTestSchema = new mongoose.Schema({
+  name: { type: String, required: true, unique: true },
+  description: { type: String },
+  price: { type: Number, required: true },
+  isActive: { type: Boolean, default: true }
+}, { timestamps: true });
+
+module.exports = mongoose.model('LabTest', LabTestSchema); 

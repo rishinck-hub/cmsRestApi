@@ -1,18 +1,38 @@
-const express = require('express');
-const router = express.Router();
-const { login } = require('../controllers/authController');
-const { loginValidation } = require('../validation/authValidation');
-const validate = require('../middlewares/validateRequest');
+function registerValidation(data) {
+  const errors = {};
 
-router.post('/login', loginValidation, validate, login);
+  if (!data.name || typeof data.name !== 'string' || data.name.length < 3 || data.name.length > 255) {
+    errors.name = 'Name must be a string between 3 and 255 characters';
+  }
+  if (!data.email || typeof data.email !== 'string' || !/^[^@]+@[^@]+\.[^@]+$/.test(data.email)) {
+    errors.email = 'A valid email is required';
+  }
+  if (!data.password || typeof data.password !== 'string' || data.password.length < 6 || data.password.length > 1024) {
+    errors.password = 'Password must be between 6 and 1024 characters';
+  }
+  const validRoles = ['admin', 'doctor', 'nurse', 'pharmacist', 'receptionist'];
+  if (!data.role || !validRoles.includes(data.role)) {
+    errors.role = 'Role must be one of: admin, doctor, nurse, pharmacist, receptionist';
+  }
 
-module.exports = router;
+  return {
+    error: Object.keys(errors).length > 0 ? { details: errors } : null
+  };
+}
 
+function loginValidation(data) {
+  const errors = {};
 
-// 📁 validation/authValidation.js
-const { body } = require('express-validator');
+  if (!data.email || typeof data.email !== 'string' || !/^[^@]+@[^@]+\.[^@]+$/.test(data.email)) {
+    errors.email = 'A valid email is required';
+  }
+  if (!data.password || typeof data.password !== 'string' || data.password.length < 6 || data.password.length > 1024) {
+    errors.password = 'Password must be between 6 and 1024 characters';
+  }
 
-exports.loginValidation = [
-  body('email').isEmail().withMessage('Valid email required'),
-  body('password').notEmpty().withMessage('Password is required')
-];
+  return {
+    error: Object.keys(errors).length > 0 ? { details: errors } : null
+  };
+}
+
+module.exports = { registerValidation, loginValidation };
