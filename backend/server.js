@@ -1,8 +1,10 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
+const cors = require("cors");
 const connectDB = require("./config/db");
 
+// Import routes
 // Import routes
 const authRoutes = require("./routes/authRoutes");
 // const staffRoutes = require("./routes/staffRoutes");
@@ -25,8 +27,12 @@ const app = express();
 
 // Middleware
 app.use(cors());
+
+// Middleware
+app.use(cors());
 app.use(express.json());
 
+// Routes
 // Routes
 app.use("/api/auth", authRoutes);
 // app.use("/api/staff", staffRoutes);
