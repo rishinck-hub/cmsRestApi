@@ -1,13 +1,3 @@
-<<<<<<< HEAD
-const mongoose=require("mongoose");
-
-const roleSchema=new mongoose.Schema({
-    roleId:{type:String,required:true,unique:true},
-    role:{type:String,required:true,unique:true}
-});
-
-module.exports=mongoose.model("Role",roleSchema);
-=======
 const mongoose = require('mongoose');
 
 const RoleSchema = new mongoose.Schema({
@@ -17,4 +7,3 @@ const RoleSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 module.exports = mongoose.model('Role', RoleSchema); 
->>>>>>> teamLeadTask
