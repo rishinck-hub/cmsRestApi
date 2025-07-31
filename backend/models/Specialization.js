@@ -1,8 +1,8 @@
 const mongoose=require("mongoose");
 
-const docRegSchema=new mongoose.Schema({
+const specializationSchema=new mongoose.Schema({
     specializationId:{type:String,required:true,unique:true},
-    specialization:String,
+    specialization:{type:String,required:true,unique:true}
 });
 
 module.exports=mongoose.model("Specialization",specializationSchema);
