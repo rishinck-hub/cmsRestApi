@@ -4,7 +4,7 @@ const dotenv = require('dotenv');
 const connectDB = require('./config/db'); // Make sure this file exists
 const authRoutes = require('./routes/authRoute');
 const medicineRoutes = require('./routes/medicineRoutes'); // If available
-const inventoryRoutes = require('./routes/inventoryRoutes'); // If available
+const inventoryRoutes = require('./routes/inventoryRoutes'); //  Corrected
 const labTestRoutes = require('./routes/labTestRoutes'); // If available
 const cors = require('cors');
 
@@ -24,10 +24,10 @@ connectDB().catch(err => {
 app.use(cors());
 app.use(express.json());
 
-// Routes
+//  Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/medicines', medicineRoutes);
-app.use('/api/inventory/medicine', inventoryRoutes);
+app.use('/api/inventory', inventoryRoutes); //  Fixed path here
 app.use('/api/labtests', labTestRoutes);
 
 // Root
