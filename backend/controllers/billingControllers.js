@@ -1,89 +1,127 @@
+const mongoose = require('mongoose');
 const Billing = require('../models/Billing');
 const Appointment = require('../models/Appointment');
 
-// 1. Generate Appointment Bill
-exports.createBill = async (req, res) => {
-    try {
-        const { appointmentId, consultationFee, additionalCharges } = req.body;
+// Generate Appointment Bill
+exports.generateAppointmentBill = async (req, res) => {
+  try {
+    const { appointmentId, consultationFee, medicineCost, labTestCost } = req.body;
 
-        // Check if bill already exists for appointment
-        const existingBill = await Billing.findOne({ appointmentId });
-        if (existingBill) {
-            return res.status(400).json({ message: 'Bill already exists for this appointment.' });
-        }
-
-        const totalAmount = consultationFee + (additionalCharges || 0);
-
-        const bill = new Billing({
-            appointmentId,
-            consultationFee,
-            additionalCharges,
-            totalAmount
-        });
-
-        await bill.save();
-        res.status(201).json(bill);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+    if (!mongoose.Types.ObjectId.isValid(appointmentId)) {
+      return res.status(400).json({ message: 'Invalid appointment ID' });
     }
+
+    const appointment = await Appointment.findById(appointmentId);
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
+
+    if (!appointment.patient) {
+      return res.status(400).json({ message: 'Appointment has no linked patient' });
+    }
+
+    const existingBill = await Billing.findOne({ appointment: appointmentId });
+    if (existingBill) {
+      return res.status(400).json({ message: 'Bill already exists for this appointment' });
+    }
+
+    const totalAmount = (consultationFee || 0) + (medicineCost || 0) + (labTestCost || 0);
+
+    const billing = new Billing({
+      appointment: appointmentId,
+      patient: appointment.patient,
+      consultationFee: consultationFee || 0,
+      medicineCost: medicineCost || 0,
+      labTestCost: labTestCost || 0,
+      totalAmount
+    });
+
+    await billing.save();
+
+    res.status(201).json({ message: 'Appointment bill generated successfully', billing });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
 };
 
-// 2. Update Appointment Bill
-exports.updateBill = async (req, res) => {
-    try {
-        const { consultationFee, additionalCharges, paymentStatus } = req.body;
-        const totalAmount = consultationFee + (additionalCharges || 0);
+// Update Appointment Bill
+exports.updateAppointmentBill = async (req, res) => {
+  try {
+    const { appointmentId } = req.params;
+    const { consultationFee, medicineCost, labTestCost, paymentStatus, paymentDate } = req.body;
 
-        const updatedBill = await Billing.findOneAndUpdate(
-            { appointmentId: req.params.appointmentId },
-            {
-                consultationFee,
-                additionalCharges,
-                totalAmount,
-                paymentStatus
-            },
-            { new: true }
-        );
-
-        if (!updatedBill) {
-            return res.status(404).json({ message: 'Bill not found for this appointment.' });
-        }
-
-        res.json(updatedBill);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+    if (!mongoose.Types.ObjectId.isValid(appointmentId)) {
+      return res.status(400).json({ message: 'Invalid appointment ID' });
     }
+
+    const billing = await Billing.findOne({ appointment: appointmentId });
+    if (!billing) {
+      return res.status(404).json({ message: 'Bill not found' });
+    }
+
+    if (consultationFee !== undefined) billing.consultationFee = consultationFee;
+    if (medicineCost !== undefined) billing.medicineCost = medicineCost;
+    if (labTestCost !== undefined) billing.labTestCost = labTestCost;
+    if (paymentStatus !== undefined) billing.paymentStatus = paymentStatus;
+    if (paymentDate !== undefined) billing.paymentDate = paymentDate;
+
+    billing.totalAmount = billing.consultationFee + billing.medicineCost + billing.labTestCost;
+
+    await billing.save();
+
+    res.json({ message: 'Appointment bill updated successfully', billing });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
 };
 
-// 3. Get Bill by Appointment ID
-exports.getBillByAppointment = async (req, res) => {
-    try {
-        const bill = await Billing.findOne({ appointmentId: req.params.appointmentId });
+// Get Bill by Appointment ID
+exports.getBillByAppointmentId = async (req, res) => {
+  try {
+    const { appointmentId } = req.params;
 
-        if (!bill) {
-            return res.status(404).json({ message: 'Bill not found for this appointment.' });
-        }
-
-        res.json(bill);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+    if (!mongoose.Types.ObjectId.isValid(appointmentId)) {
+      return res.status(400).json({ message: 'Invalid appointment ID' });
     }
+
+    const billing = await Billing.findOne({ appointment: appointmentId })
+      .populate('patient')
+      .populate('appointment');
+
+    if (!billing) {
+      return res.status(404).json({ message: 'Bill not found' });
+    }
+
+    res.json(billing);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
 };
 
-// 4. List Bills by Date Range
+// List Bills by Date Range
 exports.listBillsByDateRange = async (req, res) => {
-    try {
-        const { startDate, endDate } = req.query;
+  try {
+    const { startDate, endDate } = req.query;
 
-        const bills = await Billing.find({
-            generatedAt: {
-                $gte: new Date(startDate),
-                $lte: new Date(endDate)
-            }
-        }).populate('appointmentId');
-
-        res.json(bills);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: 'startDate and endDate are required' });
     }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (isNaN(start) || isNaN(end)) {
+      return res.status(400).json({ message: 'Invalid date format' });
+    }
+
+    end.setDate(end.getDate() + 1); // to include full end day
+
+    const bills = await Billing.find({
+      createdAt: { $gte: start, $lt: end },
+      isActive: true
+    }).populate('patient').populate('appointment');
+
+    res.json(bills);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
 };

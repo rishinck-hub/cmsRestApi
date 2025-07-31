@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-// ---------------- Patient Schema ----------------
+// Patient Schema 
 const patientSchema = new mongoose.Schema({
   name: { type: String, required: true },
   dob: { type: Date, required: true },
@@ -13,7 +13,7 @@ const patientSchema = new mongoose.Schema({
 
 const Patient = mongoose.model('Patient', patientSchema);
 
-// ---------------- Appointment Schema ----------------
+//  Appointment Schema 
 const appointmentSchema = new mongoose.Schema({
   patient: { type: mongoose.Schema.Types.ObjectId, ref: 'Patient', required: true },
   doctor: { type: mongoose.Schema.Types.ObjectId, ref: 'Staff', required: true }, // Assuming doctor is also staff
@@ -24,7 +24,7 @@ const appointmentSchema = new mongoose.Schema({
 
 const Appointment = mongoose.model('Appointment', appointmentSchema);
 
-// ---------------- Billing Schema ----------------
+// Billing Schema 
 const billingSchema = new mongoose.Schema({
   appointment: { type: mongoose.Schema.Types.ObjectId, ref: 'Appointment', required: true },
   consultationFee: { type: Number, required: true },
@@ -36,7 +36,7 @@ const billingSchema = new mongoose.Schema({
 
 const Billing = mongoose.model('Billing', billingSchema);
 
-// ---------------- Export Models ----------------
+// Export Models 
 module.exports = {
   Patient,
   Appointment,

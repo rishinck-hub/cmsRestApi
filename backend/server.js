@@ -10,11 +10,15 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-const authRoutes = require('./routes/authRoute'); 
-const receptionistRoutes = require('./routes/receptionist');
+const authRoutes = require('./routes/authRoutes'); 
+const patientRoutes = require('./routes/patientRoutes');
+const appointmentRoutes = require('./routes/appointmentRoutes');
+const billingRoutes = require('./routes/billingRoutes');
 
 app.use('/api/auth', authRoutes);
-app.use('/api/receptionist', receptionistRoutes);
+app.use('/api/patients', patientRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/billing', billingRoutes);
 
 // MongoDB connection (example)
 mongoose.connect(process.env.MONGO_URI)
