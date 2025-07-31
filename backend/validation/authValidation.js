@@ -10,9 +10,9 @@ function registerValidation(data) {
   if (!data.password || typeof data.password !== 'string' || data.password.length < 6 || data.password.length > 1024) {
     errors.password = 'Password must be between 6 and 1024 characters';
   }
-  const validRoles = ['admin', 'doctor', 'nurse', 'pharmacist', 'receptionist'];
+  const validRoles = ['admin', 'doctor', 'labtech', 'pharmacist', 'receptionist'];
   if (!data.role || !validRoles.includes(data.role)) {
-    errors.role = 'Role must be one of: admin, doctor, nurse, pharmacist, receptionist';
+    errors.role = 'Role must be one of: admin, doctor, labtech, pharmacist, receptionist';
   }
 
   return {
