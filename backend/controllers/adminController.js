@@ -6,44 +6,73 @@ const {generateToken}=require("../utils/generateToken");
 
 
 //to add new staff
-exports.addStaff=async(req,res)=>{
-    try{
-        const { roleId, age, specializationId, consultationFee, workingDays, name, email, address, contactNo } = req.body;
-        //age validation
-        if (roleId==2 && age<25){
-            return res.status(400).json({message:"Doctor must be atleast 25 years of age."})
-        } else if (roleId!=2 && age<18){
-            return res.status(400).json({message:"Age must be greater than 18."});
-        }
-        //if doctor, subsequent fields must be filled as well
-        if (roleId===2 && (!specializationId || !consultationFee || !workingDays)) return res.status(400).json({message:"Doctor must have specializationId, consultationFee, and workingDays"});
-        const hashedPassword=await bcrypt.hash("Password123",10);
-        const staffId=await generateStaffId(roleId);
-        //if staff already exist
-        const exist=await Staff.findOne({email});
-        if (exist) return res.status(400).json({message:"Staff already exist"});
-        const newStaff=new Staff({
-            staffId,
-            name,
-            email,
-            address,
-            contactNo,
-            age,
-            roleId,
-            specializationId:roleId===2 ? specializationId:undefined,
-            consultationFee:roleId===2 ? consultationFee:undefined,
-            workingDays:roleId===2 ? workingDays:undefined,
-            password:hashedPassword,
-            isActive:true,
-        });
-        await newStaff.save();
-        const { password, ...cleaned } = newStaff.toObject();
-        res.status(201).json({message:"Staff created",staff:cleaned});
-    } catch(err){
-        console.error('Error adding staff:', err);
-        res.status(500).json({message:"Server error",error:err.message})
-    };
+exports.addStaff = async (req, res) => {
+  try {
+    const {
+      roleId,
+      age,
+      specializationId,
+      consultationFee,
+      workingDays,
+      name,
+      email,
+      address,
+      contactNo,
+    } = req.body;
+
+    // 1. Age validation
+    if (roleId == 2 && age < 25) {
+      return res.status(400).json({ message: "Doctor must be at least 25 years of age." });
+    } else if (roleId != 2 && age < 18) {
+      return res.status(400).json({ message: "Age must be greater than 18." });
+    }
+
+    // 2. Check for existing email before anything else
+    const exist = await Staff.findOne({ email });
+    if (exist) return res.status(400).json({ message: "Staff already exists with this email." });
+
+    // 3. Required doctor fields
+    if (roleId === 2 && (!specializationId || !consultationFee || !workingDays)) {
+      return res.status(400).json({
+        message: "Doctor must have specializationId, consultationFee, and workingDays",
+      });
+    }
+
+    // 4. Hash password
+    const hashedPassword = await bcrypt.hash("Password123", 10);
+
+    // 5. Safely generate staff ID after validation
+    const staffId = await generateStaffId(roleId);
+
+    // 6. Create new staff
+    const newStaff = new Staff({
+      staffId,
+      name,
+      email,
+      address,
+      contactNo,
+      age,
+      roleId,
+      specializationId: roleId === 2 ? specializationId : undefined,
+      consultationFee: roleId === 2 ? consultationFee : undefined,
+      workingDays: roleId === 2 ? workingDays : undefined,
+      password: hashedPassword,
+      isActive: true,
+    });
+
+    await newStaff.save();
+    const { password, ...cleaned } = newStaff.toObject();
+
+    res.status(201).json({ message: "Staff created", staff: cleaned });
+  } catch (err) {
+    console.error("Error adding staff:", err);
+    if (err.code === 11000 && err.keyPattern?.staffId) {
+      return res.status(409).json({ message: "Duplicate staffId detected. Please try again." });
+    }
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
 };
+
 
 //stafflogin
 exports.login = async (req, res) => {
@@ -54,12 +83,6 @@ exports.login = async (req, res) => {
         .status(400)
         .json({ message: "Email, password, and roleId are required" });
     }
-    console.log("Input:", { email, password, roleId });
-    console.log("Expected:", {
-      ADMIN_EMAIL: process.env.ADMIN_EMAIL,
-      ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
-      ADMIN_ROLE_ID: process.env.ADMIN_ROLE_ID,
-    });
 
     // Check for hardcoded admin credentials
     if (
@@ -70,7 +93,7 @@ exports.login = async (req, res) => {
       const token = jwt.sign(
         {
           email: process.env.ADMIN_EMAIL,
-          roleId: process.env.ADMIN_ROLE_ID,
+          roleId: process.env.ADMIN_ROLE_ID.toString(),
           isAdmin: true,
         },
         process.env.JWT_SECRET,
@@ -98,7 +121,7 @@ exports.login = async (req, res) => {
     const token = generateToken({
       id: staff._id,
       email: staff.email,
-      roleId: staff.roleId,
+      roleId: staff.roleId.toString(),
     });
 
     res.status(200).json({

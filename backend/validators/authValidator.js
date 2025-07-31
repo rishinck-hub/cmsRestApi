@@ -6,8 +6,6 @@ const loginValidator = [
     body('roleId').isInt({ min: 1, max: 5 }).withMessage('Role ID must be between 1 and 5')
 ];
 
-const passwordResetValidator = [
-    body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters')
-];
 
-module.exports = { loginValidator, passwordResetValidator };
+
+module.exports = loginValidator;

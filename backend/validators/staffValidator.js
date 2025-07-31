@@ -13,5 +13,15 @@ const staffValidator = [
     body('workingDays').if((value, { req }) => req.body.roleId == 2).notEmpty().withMessage('Working days are required for doctors')
 ];
 
-module.exports =staffValidator;
+const updateStaffValidator = [
+    body('name').optional().notEmpty().withMessage('Name is required'),
+    body('email').optional().isEmail().withMessage('Invalid email format'),
+    body('address').optional().notEmpty().withMessage('Address is required'),
+    body('contactNo').optional().matches(/^\d{10}$/).withMessage('Contact number must be 10 digits'),
+    body('age').optional().isInt({ min: 18 }).withMessage('Minimum age is 18'),
+    body('roleId').optional().isIn([1, 2, 3, 4, 5]).withMessage('Invalid roleId'),
+];
+
+
+module.exports ={staffValidator,updateStaffValidator};
 

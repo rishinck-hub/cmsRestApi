@@ -1,5 +1,4 @@
-const Staff=require("../models/Staff");
-
+const Staff = require("../models/Staff");
 
 const getRolePrefix = {
   1: 'ADM', // Admin
@@ -9,12 +8,23 @@ const getRolePrefix = {
   5: 'LAB', // LabTech
 };
 
+const generateStaffId = async function (roleId) {
+  const prefix = getRolePrefix[roleId] || 'STF';
 
-const generateStaffId=async function (roleId) {
-    const prefix = getRolePrefix[roleId] || 'STF';
-    const count=await Staff.countDocuments({roleId});
-    const idNumber=(count+1).toString().padStart(3,"0");
-    return `${prefix}${idNumber}`
+  // Find the last staff with this prefix
+  const lastStaff = await Staff.findOne({ staffId: new RegExp(`^${prefix}`) })
+    .sort({ staffId: -1 }) // Descending order
+    .collation({ locale: 'en', numericOrdering: true });
+
+  let nextNumber = 1;
+
+  if (lastStaff) {
+    const lastNumber = parseInt(lastStaff.staffId.replace(prefix, '')) || 0;
+    nextNumber = lastNumber + 1;
+  }
+
+  const idNumber = nextNumber.toString().padStart(3, "0");
+  return `${prefix}${idNumber}`;
 };
 
-module.exports=generateStaffId;
+module.exports = generateStaffId;
