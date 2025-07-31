@@ -3,11 +3,19 @@ const mongoose = require('mongoose');
 const PatientSchema = new mongoose.Schema({
   patientId: { type: String, unique: true },
   name: { type: String, required: true },
+<<<<<<< HEAD
   email: { type: String, unique: true },
   phone: { type: String, required: true },
   dateOfBirth: { type: Date, required: true },
   gender: { type: String, enum: ['Male', 'Female', 'Other'], required: true },
   address: { type: String },
+=======
+  email: { type: String, required: true, unique: true },
+  phone: { type: String, required: true },
+  dateOfBirth: { type: Date, required: true },
+  gender: { type: String, enum: ['male', 'female', 'other'], required: true },
+  address: { type: String, required: true },
+>>>>>>> teamLeadTask
   bloodGroup: { type: String },
   emergencyContact: {
     name: { type: String },
