@@ -8,12 +8,16 @@ const authorize = require('../middleware/authorize');
 // All routes require authentication
 router.use(auth);
 
-// Lab Test Management Routes (Lab Technician & Admin)
-router.post('/', authorize('labtech', 'admin'), labTestController.addLabTest);
-router.put('/:labTestId', authorize('labtech', 'admin'), labTestController.updateLabTest);
-router.get('/:labTestId', authorize('labtech', 'admin', 'doctor'), labTestController.getLabTestById);
-router.get('/', authorize('labtech', 'admin', 'doctor'), labTestController.listAllLabTests);
-router.patch('/:labTestId/deactivate', authorize('labtech', 'admin'), labTestController.deactivateLabTest);
+// Lab Test Prescription Routes (Doctor & Admin)
+router.post('/', authorize('doctor', 'admin'), labTestController.createLabTestPrescription);
+router.put('/:prescriptionId', authorize('doctor', 'admin'), labTestController.updateLabTestPrescription);
+router.get('/:prescriptionId', authorize('doctor', 'admin', 'labtech'), labTestController.getLabTestPrescriptionById);
+router.get('/', authorize('doctor', 'admin', 'labtech'), labTestController.listLabTestPrescriptionsByDoctor);
+router.patch('/:prescriptionId/deactivate', authorize('doctor', 'admin'), labTestController.deactivateLabTestPrescription);
+
+// Lab Test Prescription Routes by Appointment/Patient
+router.get('/appointment/:appointmentId', authorize('doctor', 'admin', 'labtech'), labTestController.getLabTestPrescriptionByAppointmentId);
+router.get('/patient/:patientId', authorize('doctor', 'admin', 'labtech'), labTestController.listLabTestPrescriptionsByPatient);
 
 // Lab Result Routes (Doctor & Admin)
 router.post('/labresult', authorize('doctor', 'admin'), labResultController.createLabResult);

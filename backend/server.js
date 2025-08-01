@@ -3,10 +3,13 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const connectDB = require("./config/db");
 const adminRoutes = require("./routes/adminRoutes");
-const authRoutes=require("./routes/authRoute");
-const medicineRoutes = require('./routes/medicineRoutes'); // If available
-const inventoryRoutes = require('./routes/inventoryRoutes'); //  Corrected
-const labTestRoutes = require('./routes/labTestRoutes'); // If available
+const authRoutes = require("./routes/authRoute");
+const medicineRoutes = require('./routes/medicineRoutes');
+const inventoryRoutes = require('./routes/inventoryRoutes');
+const labTestRoutes = require('./routes/labTestRoutes');
+const patientRoutes = require('./routes/patientRoutes');
+const appointmentRoutes = require('./routes/appointmentRoutes');
+const billingRoutes = require('./routes/billingRoutes');
 dotenv.config();
 
 const app = express();
@@ -15,17 +18,19 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-
 // Routes
 app.get('/', (req, res) => {
   res.send('Clinic Management System API');
 });
 
 app.use('/api/admin', adminRoutes);
-app.use("/api/auth",authRoutes);
+app.use("/api/auth", authRoutes);
 app.use('/api/medicines', medicineRoutes);
-app.use('/api/inventory', inventoryRoutes); //  Fixed path here
+app.use('/api/inventory', inventoryRoutes);
 app.use('/api/labtests', labTestRoutes);
+app.use('/api/patients', patientRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/billing', billingRoutes);
 
 // Error handling middleware (must be last)
 app.use((err, req, res, next) => {

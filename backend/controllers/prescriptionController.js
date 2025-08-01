@@ -1,26 +1,26 @@
-const LabTestPrescription = require('../models/LabTestPrescription');
+const MedicinePrescription = require('../models/MedicinePrescription');
 const mongoose = require('mongoose');
-const { validateRequiredFields, validateObjectId, createValidationError, validateLabTestPrescriptionData } = require('../validation');
+const { validateRequiredFields, validateObjectId, createValidationError, validateMedicinePrescriptionData } = require('../validation');
 
-// Create Lab Test Prescription
-exports.createLabTestPrescription = async (req, res) => {
+// Create Medicine Prescription
+exports.createMedicinePrescription = async (req, res) => {
   try {
     const prescriptionData = req.body;
     
     // Validate prescription data using schema
-    const validationErrors = validateLabTestPrescriptionData(prescriptionData);
+    const validationErrors = validateMedicinePrescriptionData(prescriptionData);
     if (validationErrors) {
       return createValidationError(res, 'Validation failed', validationErrors);
     }
 
-    const prescription = new LabTestPrescription(prescriptionData);
+    const prescription = new MedicinePrescription(prescriptionData);
     await prescription.save();
     
     // Populate doctor info for response
     await prescription.populate('doctor', '-password');
     await prescription.populate('consultation');
     
-    res.status(201).json({ message: 'Lab test prescription created successfully', prescription });
+    res.status(201).json({ message: 'Medicine prescription created successfully', prescription });
   } catch (err) {
     if (err.name === 'ValidationError') {
       return res.status(400).json({ message: 'Validation error', error: err.message });
@@ -29,8 +29,8 @@ exports.createLabTestPrescription = async (req, res) => {
   }
 };
 
-// Update Lab Test Prescription
-exports.updateLabTestPrescription = async (req, res) => {
+// Update Medicine Prescription
+exports.updateMedicinePrescription = async (req, res) => {
   try {
     const { prescriptionId } = req.params;
     const updateData = req.body;
@@ -41,17 +41,17 @@ exports.updateLabTestPrescription = async (req, res) => {
       return createValidationError(res, prescriptionIdError);
     }
     
-    const prescription = await LabTestPrescription.findByIdAndUpdate(
+    const prescription = await MedicinePrescription.findByIdAndUpdate(
       prescriptionId, 
       updateData, 
       { new: true, runValidators: true }
     ).populate('doctor', '-password').populate('consultation');
     
     if (!prescription) {
-      return res.status(404).json({ message: 'Lab test prescription not found' });
+      return res.status(404).json({ message: 'Prescription not found' });
     }
     
-    res.json({ message: 'Lab test prescription updated successfully', prescription });
+    res.json({ message: 'Medicine prescription updated successfully', prescription });
   } catch (err) {
     if (err.name === 'ValidationError') {
       return res.status(400).json({ message: 'Validation error', error: err.message });
@@ -60,8 +60,8 @@ exports.updateLabTestPrescription = async (req, res) => {
   }
 };
 
-// Get Lab Test Prescriptions by Appointment ID
-exports.getLabTestPrescriptionByAppointmentId = async (req, res) => {
+// Get Prescriptions by Appointment ID
+exports.getPrescriptionsByAppointmentId = async (req, res) => {
   try {
     const { appointmentId } = req.params;
     
@@ -69,7 +69,7 @@ exports.getLabTestPrescriptionByAppointmentId = async (req, res) => {
       return createValidationError(res, 'Appointment ID is required');
     }
     
-    const prescriptions = await LabTestPrescription.find({ appointmentId: appointmentId })
+    const prescriptions = await MedicinePrescription.find({ appointmentId: appointmentId })
       .populate('doctor', '-password')
       .populate('consultation')
       .sort({ createdAt: -1 });
@@ -80,8 +80,8 @@ exports.getLabTestPrescriptionByAppointmentId = async (req, res) => {
   }
 };
 
-// List Lab Test Prescriptions by Patient (active and history)
-exports.listLabTestPrescriptionsByPatient = async (req, res) => {
+// List Prescriptions by Patient (active and history)
+exports.listPrescriptionsByPatient = async (req, res) => {
   try {
     const { patientId } = req.params;
     const { active = 'true' } = req.query; // Query parameter to filter active/inactive
@@ -100,7 +100,7 @@ exports.listLabTestPrescriptionsByPatient = async (req, res) => {
     }
     // If active is not specified, return all prescriptions
     
-    const prescriptions = await LabTestPrescription.find(query)
+    const prescriptions = await MedicinePrescription.find(query)
       .populate('doctor', '-password')
       .populate('consultation')
       .sort({ createdAt: -1 });
@@ -111,8 +111,8 @@ exports.listLabTestPrescriptionsByPatient = async (req, res) => {
   }
 };
 
-// List Lab Test Prescriptions by Doctor (active and history)
-exports.listLabTestPrescriptionsByDoctor = async (req, res) => {
+// List Prescriptions by Doctor (active and history)
+exports.listPrescriptionsByDoctor = async (req, res) => {
   try {
     const { doctorId } = req.params;
     const { active = 'true' } = req.query; // Query parameter to filter active/inactive
@@ -132,7 +132,7 @@ exports.listLabTestPrescriptionsByDoctor = async (req, res) => {
     }
     // If active is not specified, return all prescriptions
     
-    const prescriptions = await LabTestPrescription.find(query)
+    const prescriptions = await MedicinePrescription.find(query)
       .populate('doctor', '-password')
       .populate('consultation')
       .sort({ createdAt: -1 });
@@ -143,8 +143,8 @@ exports.listLabTestPrescriptionsByDoctor = async (req, res) => {
   }
 };
 
-// Get single lab test prescription by ID
-exports.getLabTestPrescriptionById = async (req, res) => {
+// Get single prescription by ID
+exports.getPrescriptionById = async (req, res) => {
   try {
     const { prescriptionId } = req.params;
     
@@ -153,12 +153,12 @@ exports.getLabTestPrescriptionById = async (req, res) => {
       return createValidationError(res, prescriptionIdError);
     }
     
-    const prescription = await LabTestPrescription.findById(prescriptionId)
+    const prescription = await MedicinePrescription.findById(prescriptionId)
       .populate('doctor', '-password')
       .populate('consultation');
     
     if (!prescription) {
-      return res.status(404).json({ message: 'Lab test prescription not found' });
+      return res.status(404).json({ message: 'Prescription not found' });
     }
     
     res.json(prescription);
@@ -167,8 +167,8 @@ exports.getLabTestPrescriptionById = async (req, res) => {
   }
 };
 
-// Soft delete lab test prescription (set isActive to false)
-exports.deactivateLabTestPrescription = async (req, res) => {
+// Soft delete prescription (set isActive to false)
+exports.deactivatePrescription = async (req, res) => {
   try {
     const { prescriptionId } = req.params;
     
@@ -177,17 +177,17 @@ exports.deactivateLabTestPrescription = async (req, res) => {
       return createValidationError(res, prescriptionIdError);
     }
     
-    const prescription = await LabTestPrescription.findByIdAndUpdate(
+    const prescription = await MedicinePrescription.findByIdAndUpdate(
       prescriptionId,
       { isActive: false },
       { new: true }
     ).populate('doctor', '-password').populate('consultation');
     
     if (!prescription) {
-      return res.status(404).json({ message: 'Lab test prescription not found' });
+      return res.status(404).json({ message: 'Prescription not found' });
     }
     
-    res.json({ message: 'Lab test prescription deactivated successfully', prescription });
+    res.json({ message: 'Prescription deactivated successfully', prescription });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
