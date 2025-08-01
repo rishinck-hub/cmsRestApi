@@ -16,6 +16,7 @@ router.get('/doctor/:doctorId', consultationController.listConsultationsByDoctor
 
 // Consultation History Routes
 router.get('/patient/:patientId', consultationController.listConsultationHistoryByPatient);
+router.get('/doctor/:doctorId/history', consultationController.listConsultationHistoryByDoctor);
 router.get('/history/appointment/:appointmentId', consultationController.getConsultationHistoryByAppointmentId);
 
 module.exports = router; 

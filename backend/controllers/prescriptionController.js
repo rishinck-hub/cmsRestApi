@@ -1,13 +1,30 @@
 const MedicinePrescription = require('../models/MedicinePrescription');
+const mongoose = require('mongoose');
+const { validateRequiredFields, validateObjectId, createValidationError, validateMedicinePrescriptionData } = require('../validation');
 
 // Create Medicine Prescription
 exports.createMedicinePrescription = async (req, res) => {
   try {
     const prescriptionData = req.body;
+    
+    // Validate prescription data using schema
+    const validationErrors = validateMedicinePrescriptionData(prescriptionData);
+    if (validationErrors) {
+      return createValidationError(res, 'Validation failed', validationErrors);
+    }
+
     const prescription = new MedicinePrescription(prescriptionData);
     await prescription.save();
+    
+    // Populate doctor info for response
+    await prescription.populate('doctor', '-password');
+    await prescription.populate('consultation');
+    
     res.status(201).json({ message: 'Medicine prescription created successfully', prescription });
   } catch (err) {
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ message: 'Validation error', error: err.message });
+    }
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
@@ -18,25 +35,44 @@ exports.updateMedicinePrescription = async (req, res) => {
     const { prescriptionId } = req.params;
     const updateData = req.body;
     
-    const prescription = await MedicinePrescription.findByIdAndUpdate(prescriptionId, updateData, { new: true });
+    // Validate ObjectId
+    const prescriptionIdError = validateObjectId(prescriptionId, 'prescription ID');
+    if (prescriptionIdError) {
+      return createValidationError(res, prescriptionIdError);
+    }
+    
+    const prescription = await MedicinePrescription.findByIdAndUpdate(
+      prescriptionId, 
+      updateData, 
+      { new: true, runValidators: true }
+    ).populate('doctor', '-password').populate('consultation');
+    
     if (!prescription) {
       return res.status(404).json({ message: 'Prescription not found' });
     }
     
     res.json({ message: 'Medicine prescription updated successfully', prescription });
   } catch (err) {
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ message: 'Validation error', error: err.message });
+    }
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 
-// Get Prescription by Appointment ID
-exports.getPrescriptionByAppointmentId = async (req, res) => {
+// Get Prescriptions by Appointment ID
+exports.getPrescriptionsByAppointmentId = async (req, res) => {
   try {
     const { appointmentId } = req.params;
-    const prescriptions = await MedicinePrescription.find({ appointment: appointmentId })
-      .populate('medicine')
-      .populate('doctor.user', '-password')
-      .populate('patient');
+    
+    if (!appointmentId) {
+      return createValidationError(res, 'Appointment ID is required');
+    }
+    
+    const prescriptions = await MedicinePrescription.find({ appointmentId: appointmentId })
+      .populate('doctor', '-password')
+      .populate('consultation')
+      .sort({ createdAt: -1 });
     
     res.json(prescriptions);
   } catch (err) {
@@ -44,14 +80,30 @@ exports.getPrescriptionByAppointmentId = async (req, res) => {
   }
 };
 
-// List Prescriptions by Patient
+// List Prescriptions by Patient (active and history)
 exports.listPrescriptionsByPatient = async (req, res) => {
   try {
     const { patientId } = req.params;
-    const prescriptions = await MedicinePrescription.find({ 
-      patient: patientId, 
-      isActive: true 
-    }).populate('medicine').populate('doctor.user', '-password');
+    const { active = 'true' } = req.query; // Query parameter to filter active/inactive
+    
+    if (!patientId) {
+      return createValidationError(res, 'Patient ID is required');
+    }
+    
+    const query = { patientId: patientId };
+    
+    // If active parameter is provided, filter by isActive status
+    if (active === 'true') {
+      query.isActive = true;
+    } else if (active === 'false') {
+      query.isActive = false;
+    }
+    // If active is not specified, return all prescriptions
+    
+    const prescriptions = await MedicinePrescription.find(query)
+      .populate('doctor', '-password')
+      .populate('consultation')
+      .sort({ createdAt: -1 });
     
     res.json(prescriptions);
   } catch (err) {
@@ -59,29 +111,31 @@ exports.listPrescriptionsByPatient = async (req, res) => {
   }
 };
 
-// List Medicine Prescription History by Patient
-exports.listMedicinePrescriptionHistoryByPatient = async (req, res) => {
-  try {
-    const { patientId } = req.params;
-    const prescriptions = await MedicinePrescription.find({ 
-      patient: patientId, 
-      isActive: true 
-    }).populate('medicine').populate('doctor.user', '-password').populate('appointment');
-    
-    res.json(prescriptions);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
-  }
-};
-
-// List Medicine Prescription History by Doctor
-exports.listMedicinePrescriptionHistoryByDoctor = async (req, res) => {
+// List Prescriptions by Doctor (active and history)
+exports.listPrescriptionsByDoctor = async (req, res) => {
   try {
     const { doctorId } = req.params;
-    const prescriptions = await MedicinePrescription.find({ 
-      doctor: doctorId, 
-      isActive: true 
-    }).populate('medicine').populate('patient').populate('appointment');
+    const { active = 'true' } = req.query; // Query parameter to filter active/inactive
+    
+    const doctorIdError = validateObjectId(doctorId, 'doctor ID');
+    if (doctorIdError) {
+      return createValidationError(res, doctorIdError);
+    }
+    
+    const query = { doctor: doctorId };
+    
+    // If active parameter is provided, filter by isActive status
+    if (active === 'true') {
+      query.isActive = true;
+    } else if (active === 'false') {
+      query.isActive = false;
+    }
+    // If active is not specified, return all prescriptions
+    
+    const prescriptions = await MedicinePrescription.find(query)
+      .populate('doctor', '-password')
+      .populate('consultation')
+      .sort({ createdAt: -1 });
     
     res.json(prescriptions);
   } catch (err) {
@@ -89,16 +143,51 @@ exports.listMedicinePrescriptionHistoryByDoctor = async (req, res) => {
   }
 };
 
-// Get Medicine Prescription History by Appointment ID
-exports.getMedicinePrescriptionHistoryByAppointmentId = async (req, res) => {
+// Get single prescription by ID
+exports.getPrescriptionById = async (req, res) => {
   try {
-    const { appointmentId } = req.params;
-    const prescriptions = await MedicinePrescription.find({ appointment: appointmentId })
-      .populate('medicine')
-      .populate('doctor.user', '-password')
-      .populate('patient');
+    const { prescriptionId } = req.params;
     
-    res.json(prescriptions);
+    const prescriptionIdError = validateObjectId(prescriptionId, 'prescription ID');
+    if (prescriptionIdError) {
+      return createValidationError(res, prescriptionIdError);
+    }
+    
+    const prescription = await MedicinePrescription.findById(prescriptionId)
+      .populate('doctor', '-password')
+      .populate('consultation');
+    
+    if (!prescription) {
+      return res.status(404).json({ message: 'Prescription not found' });
+    }
+    
+    res.json(prescription);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// Soft delete prescription (set isActive to false)
+exports.deactivatePrescription = async (req, res) => {
+  try {
+    const { prescriptionId } = req.params;
+    
+    const prescriptionIdError = validateObjectId(prescriptionId, 'prescription ID');
+    if (prescriptionIdError) {
+      return createValidationError(res, prescriptionIdError);
+    }
+    
+    const prescription = await MedicinePrescription.findByIdAndUpdate(
+      prescriptionId,
+      { isActive: false },
+      { new: true }
+    ).populate('doctor', '-password').populate('consultation');
+    
+    if (!prescription) {
+      return res.status(404).json({ message: 'Prescription not found' });
+    }
+    
+    res.json({ message: 'Prescription deactivated successfully', prescription });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }

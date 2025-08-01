@@ -33,9 +33,8 @@ exports.updateConsultationNote = async (req, res) => {
 exports.getConsultationByAppointmentId = async (req, res) => {
   try {
     const { appointmentId } = req.params;
-    const consultation = await Consultation.findOne({ appointment: appointmentId })
-      .populate('doctor.user', '-password')
-      .populate('patient');
+    const consultation = await Consultation.findOne({ appointmentId: appointmentId })
+      .populate('doctor', '-password');
     
     if (!consultation) {
       return res.status(404).json({ message: 'Consultation not found' });
@@ -54,7 +53,7 @@ exports.listConsultationsByDoctor = async (req, res) => {
     const consultations = await Consultation.find({ 
       doctor: doctorId, 
       isActive: true 
-    }).populate('patient').populate('appointment');
+    });
     
     res.json(consultations);
   } catch (err) {
@@ -67,9 +66,24 @@ exports.listConsultationHistoryByPatient = async (req, res) => {
   try {
     const { patientId } = req.params;
     const consultations = await Consultation.find({ 
-      patient: patientId, 
+      patientId: patientId, 
       isActive: true 
-    }).populate('doctor.user', '-password').populate('appointment');
+    }).populate('doctor', '-password');
+    
+    res.json(consultations);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// List Consultation History by Doctor
+exports.listConsultationHistoryByDoctor = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    const consultations = await Consultation.find({ 
+      doctor: doctorId, 
+      isActive: true 
+    });
     
     res.json(consultations);
   } catch (err) {
@@ -81,9 +95,8 @@ exports.listConsultationHistoryByPatient = async (req, res) => {
 exports.getConsultationHistoryByAppointmentId = async (req, res) => {
   try {
     const { appointmentId } = req.params;
-    const consultation = await Consultation.findOne({ appointment: appointmentId })
-      .populate('doctor.user', '-password')
-      .populate('patient');
+    const consultation = await Consultation.findOne({ appointmentId: appointmentId })
+      .populate('doctor', '-password');
     
     if (!consultation) {
       return res.status(404).json({ message: 'Consultation history not found' });
