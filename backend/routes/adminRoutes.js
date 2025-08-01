@@ -2,9 +2,9 @@ const express = require('express');
 const router = express.Router();
 const admCtrl = require('../controllers/adminController');
 const {authenticateToken,authorizeRoles}=require("../controllers/authController");
-const {staffValidator,updateStaffValidator} = require("../validators/staffValidator");
-const { loginValidator, passwordResetValidator } = require("../validators/authValidator");
-const validator = require('../validators/validator');
+const {staffValidator,updateStaffValidator} = require("../validation/staffValidator");
+const { loginValidator, passwordResetValidator } = require("../validation/authValidator");
+const validator = require('../validation/validator');
 
 router.use(authenticateToken);
 router.use(authorizeRoles(1));

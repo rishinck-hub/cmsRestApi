@@ -3,7 +3,10 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const connectDB = require("./config/db");
 const adminRoutes = require("./routes/adminRoutes");
-const authRoutes=require("./routes/authRoute")
+const authRoutes=require("./routes/authRoute");
+const medicineRoutes = require('./routes/medicineRoutes'); // If available
+const inventoryRoutes = require('./routes/inventoryRoutes'); //  Corrected
+const labTestRoutes = require('./routes/labTestRoutes'); // If available
 dotenv.config();
 
 const app = express();
@@ -20,6 +23,9 @@ app.get('/', (req, res) => {
 
 app.use('/api/admin', adminRoutes);
 app.use("/api/auth",authRoutes);
+app.use('/api/medicines', medicineRoutes);
+app.use('/api/inventory', inventoryRoutes); //  Fixed path here
+app.use('/api/labtests', labTestRoutes);
 
 // Error handling middleware (must be last)
 app.use((err, req, res, next) => {
@@ -46,4 +52,3 @@ process.on('unhandledRejection', (err) => {
 process.on('uncaughtException', (err) => {
   console.error("Uncaught Exception:", err);
 });
-
